@@ -460,4 +460,84 @@ public class DocumentTest {
         assertEquals(StandardCharsets.US_ASCII, doc.outputSettings().charset());
         assertEquals(asci, p.outerHtml());
     }
+
+
+    @Test
+    public void testNormalise() {
+        // Test when the document has no <html>, <head>, or <body> elements.
+        Document doc1 = Jsoup.parse("<p>Hello</p>");
+        doc1.normalise();
+        assertEquals(
+            TextUtil.stripNewlines("<html><head></head><body><p>Hello</p></body></html>"),
+            TextUtil.stripNewlines(doc1.html())
+        );
+
+        // Test when the document already has <html>, <head>, and <body> elements.
+        Document doc2 = Jsoup.parse("<html><head><title>Test</title></head><body><p>Hello</p></body></html>");
+        doc2.normalise();
+        assertEquals(
+            TextUtil.stripNewlines("<html><head><title>Test</title></head><body><p>Hello</p></body></html>"),
+            TextUtil.stripNewlines(doc2.html())
+        );
+    }
+
+    @Test
+    public void testNormaliseWhenHtmlElementMissing() {
+        Document doc = Jsoup.parse("<p>Hello</p>");
+        doc.normalise();
+        assertHtmlEquals("<html><head></head><body><p>Hello</p></body></html>", doc.html());
+    }
+
+    @Test
+    public void testNormaliseWhenHeadElementMissing() {
+        Document doc = Jsoup.parse("<html><body><p>Hello</p></body></html>");
+        doc.normalise();
+        assertHtmlEquals("<html><head></head><body><p>Hello</p></body></html>", doc.html());
+    }
+
+    @Test
+    public void testNormaliseWhenBodyElementMissing() {
+        Document doc = Jsoup.parse("<html><head><title>Test</title></head></html>");
+        doc.normalise();
+        assertHtmlEquals("<html><head><title>Test</title></head><body></body></html>", doc.html());
+    }
+
+    @Test
+    public void testNormaliseWhenAllElementsMissing() {
+        Document doc = Jsoup.parse("Some text");
+        doc.normalise();
+        assertHtmlEquals("<html><head></head><body>Some text</body></html>", doc.html());
+    }
+
+
+    private void assertHtmlEquals(String expected, String actual) {
+        assertEquals(normalizeHtml(expected), normalizeHtml(actual));
+    }
+    
+    private String normalizeHtml(String html) {
+        // Remove espaços em branco e quebras de linha antes da comparação
+        return html.replaceAll("\\s", "");
+    }
+
+
+    @Test
+    public void testNormaliseWithHtmlAndHead() {
+        Document doc = Jsoup.parse("<html><head></head></html>");
+        doc.normalise();
+        assertHtmlEquals("<html><head></head><body></body></html>", doc.html());
+    }
+
+    @Test
+    public void testNormaliseWithoutHtmlAndHead() {
+        Document doc = Jsoup.parse("<p>Hello</p>");
+        doc.normalise();
+        assertHtmlEquals("<html><head></head><body><p>Hello</p></body></html>", doc.html());
+    }
+
+    @Test
+    public void testNormaliseWithBody() {
+        Document doc = Jsoup.parse("<html><body></body></html>");
+        doc.normalise();
+        assertHtmlEquals("<html><head></head><body></body></html>", doc.html());
+    }
 }
